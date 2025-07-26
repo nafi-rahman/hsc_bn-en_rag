@@ -1,0 +1,31 @@
+STEPS TO RUN APP:
+
+if you're having version mismatch, make sure that you are on python 3.11.8 or around that. 
+the best way to do it is pyenv
+
+make sure you have docker installed
+
+WINDOWS:
+docker run -p 6333:6333 -p 6334:6334 `
+  -v ${PWD}/qdrant_storage:/qdrant/storage `
+  qdrant/qdrant
+
+make sure qdrant is running before activating the script 
+
+powershell -ExecutionPolicy Bypass -File start_app.ps1
+
+
+.\.venv\Scripts\activate
+uvicorn rag.retrieval:app --host 0.0.0.0 --port 8000
+streamlit run app.py --server.port 8501
+
+
+LINUX:
+docker run -p 6333:6333 -p 6334:6334 \
+  -v $(pwd)/qdrant_storage:/qdrant/storage \
+  qdrant/qdrant
+
+
+.\.venv\Scripts\activate
+uvicorn src.api:app --host 0.0.0.0 --port 8000
+streamlit run app.py --server.port 8501

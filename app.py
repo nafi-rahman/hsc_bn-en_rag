@@ -70,63 +70,99 @@ with chat_tab:
         st.session_state.history.append((prompt, answer.text))
 
 # --------------------------------------------------
-# 3.  Evaluate Tab
+# 3.  Evaluate Tab  (light-weight & crash-safe)
 # --------------------------------------------------
 with eval_tab:
     st.header("🧪 Evaluation Panel")
 
-    import re
-    from sentence_transformers import SentenceTransformer
-    from sklearn.metrics.pairwise import cosine_similarity
+    import re, time, traceback
+    from typing import List, Tuple
 
-    sim_model = SentenceTransformer(
-    "shihab17/bangla-sentence-transformer",
-    device="cpu"          # 👈 explicit device
-    )
+    # lightweight metrics
+    import nltk
+    from nltk.translate.bleu_score import sentence_bleu
+    from rouge_score import rouge_scorer
 
-    TESTS = [
+    # one-time NLTK download (quiet)
+    try:
+        nltk.data.find("tokenizers/punkt")
+    except LookupError:
+        nltk.download("punkt", quiet=True)
+
+    # small, fast ROUGE scorer
+    rouge = rouge_scorer.RougeScorer(["rouge1", "rougeL"], use_stemmer=False)
+
+    TESTS: List[Tuple[str, str]] = [
         ("অনুপমের ভাষায় সুপুরুষ কাকে বলা হয়েছে?", "শুম্ভুনাথ"),
         ("কাকে অনুপমের ভাগ্য দেবতা বলে উল্লেখ করা হয়েছে?", "মামাকে"),
         ("বিয়ের সময় কল্যাণীর প্রকৃত বয়স কত ছিল?", "১৫ বছর"),
     ]
 
+    def tokenize(text: str) -> List[str]:
+        return nltk.word_tokenize(text.lower())
+
+    def lex_metrics(expected: str, generated: str) -> dict:
+        gold_tok = tokenize(expected)
+        pred_tok = tokenize(generated)
+
+        # BLEU-1
+        bleu1 = sentence_bleu([gold_tok], pred_tok, weights=(1, 0, 0, 0))
+
+        # ROUGE
+        rouges = rouge.score(expected.lower(), generated.lower())
+
+        # token-level F1
+        overlap = set(pred_tok) & set(gold_tok)
+        p = len(overlap) / max(len(set(pred_tok)), 1)
+        r = len(overlap) / max(len(set(gold_tok)), 1)
+        f1 = 2 * p * r / max(p + r, 1e-9)
+
+        return {
+            "BLEU-1": round(bleu1, 3),
+            "ROUGE-1": round(rouges["rouge1"].fmeasure, 3),
+            "ROUGE-L": round(rouges["rougeL"].fmeasure, 3),
+            "Token-F1": round(f1, 3),
+        }
+
     if st.button("Run All Tests"):
-        results = []
-        for q, expected in TESTS:
-            with st.spinner(f"Testing: {q}"):
-                # Retrieve
+        try:
+            results = []
+            for q, expected in TESTS:
+                start = time.perf_counter()
+
+                # retrieve
                 resp = requests.post(RETRIEVER_URL, json={"query": q}, timeout=30)
                 docs = resp.json()["results"]
 
-                # Generate
+                # generate
                 from rag.generator import generate_answer
                 ans = generate_answer(q, [RetrievedChunk(text=t) for t in docs])
 
-                # 1) Exact via regex
-                hit = bool(re.search(re.escape(expected), ans.text, flags=re.I))
+                elapsed = (time.perf_counter() - start) * 1000  # ms
 
-                # 2) Groundedness (answer vs each chunk)
-                emb_ans = sim_model.encode([ans.text])
-                emb_ctx = sim_model.encode(docs)
-                groundedness = float(cosine_similarity(emb_ans, emb_ctx).max())
+                # metrics
+                m = lex_metrics(expected, ans.text)
+                m.update(
+                    {
+                        "Question": q,
+                        "Expected": expected,
+                        "Generated": ans.text,
+                        "Latency(ms)": round(elapsed, 1),
+                        "Answer Tokens": len(ans.text.split()),
+                        "Regex Hit": bool(re.search(re.escape(expected), ans.text, flags=re.I)),
+                    }
+                )
+                results.append(m)
 
-                # 3) Relevance (query vs each chunk)
-                emb_qry = sim_model.encode([q])
-                relevance = float(cosine_similarity(emb_qry, emb_ctx).mean())
+            st.dataframe(results)
 
-                results.append({
-                    "Question": q,
-                    "Expected": expected,
-                    "Generated": ans.text,
-                    "Regex Hit": hit,
-                    "Groundedness": round(groundedness, 3),
-                    "Relevance": round(relevance, 3),
-                })
+            exact = sum(r["Regex Hit"] for r in results)
+            st.metric("Exact-Match", f"{exact}/{len(results)} ({exact/len(results):.2%})")
+            st.metric("Avg Token-F1", f"{np.mean([r['Token-F1'] for r in results]):.3f}")
+            st.metric("Avg BLEU-1", f"{np.mean([r['BLEU-1'] for r in results]):.3f}")
+            st.metric("Avg ROUGE-1", f"{np.mean([r['ROUGE-1'] for r in results]):.3f}")
 
-        st.subheader("📊 Results")
-        st.dataframe(results)
-
-        exact = sum(r["Regex Hit"] for r in results)
-        st.metric("Regex-Match Accuracy", f"{exact}/{len(results)} ({exact/len(results):.2%})")
-        st.metric("Avg Groundedness", f"{np.mean([r['Groundedness'] for r in results]):.3f}")
-        st.metric("Avg Relevance", f"{np.mean([r['Relevance'] for r in results]):.3f}")
+        except Exception as e:
+            st.error("Evaluation failed – continuing safely.")
+            with st.expander("Show technical details"):
+                st.code(traceback.format_exc())
