@@ -37,7 +37,7 @@ python data/scripts/embed_and_upsert_qdrant.py
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 # 6. Start services in *this* window (or use Start-Job for background)
-# Start-Job -Name backend  -ScriptBlock { uvicorn src.api:app --host 0.0.0.0 --port 8000 }
-# Start-Job -Name frontend -ScriptBlock { streamlit run src.ui.py --server.address 0.0.0.0 --server.port 8501 }
+# Start-Job -Name backend  -ScriptBlock { uvicorn rag.retrieval:app --host 0.0.0.0 --port 8000 }
+# Start-Job -Name frontend -ScriptBlock { streamlit run app.py --server.port 8501 }
 
 # Write-Host "Backend and frontend started. Run 'Get-Job' to see status, 'Stop-Job -Name backend|frontend' to stop."
