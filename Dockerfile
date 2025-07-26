@@ -13,7 +13,7 @@ RUN poetry config virtualenvs.create false
 
 # copy lockfile first for Docker layer cache
 COPY pyproject.toml poetry.lock ./
-RUN poetry install --no-dev
+RUN poetry install --only main
 
 # copy rest of the source
 COPY . .

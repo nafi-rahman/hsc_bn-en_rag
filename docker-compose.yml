@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   qdrant:
     image: qdrant/qdrant:latest
@@ -7,6 +5,22 @@ services:
       - "6333:6333"
     volumes:
       - qdrant_storage:/qdrant/storage
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/ready"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  init_embed:
+    build: .
+    environment:
+      - SERVICE=embed
+    depends_on:
+      qdrant:
+        condition: service_healthy
+    volumes:
+      - ./data:/app/data
+    command: ["python", "scripts/embed_and_upsert_qdrant.py"]
 
   fastapi:
     build: .
@@ -15,7 +29,8 @@ services:
     ports:
       - "8000:8000"
     depends_on:
-      - qdrant
+      qdrant:
+        condition: service_healthy
     volumes:
       - ./data:/app/data
 

@@ -3,7 +3,7 @@ name = "hsc-bn-en-rag"
 version = "0.1.0"
 description = ""
 authors = [
-    {name = "nafi-rahman",email = "nafirahman16@gmail.com"}
+    { name = "nafi-rahman", email = "nafirahman16@gmail.com" }
 ]
 readme = "README.md"
 requires-python = ">=3.11,<3.14"
@@ -22,7 +22,32 @@ dependencies = [
     "scikit-learn (>=1.7.1,<2.0.0)"
 ]
 
-
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+name = "hsc-bn-en-rag"
+version = "0.1.0"
+description = ""
+authors = ["nafi-rahman <nafirahman16@gmail.com>"]
+readme = "README.md"
+packages = [
+    { include = "rag" },
+    { include = "scripts" }
+]
+
+[tool.poetry.dependencies]
+python = ">=3.11,<3.14"
+fastapi = ">=0.116.1,<0.117.0"
+langchain = ">=0.3.27,<0.4.0"
+langchain-qdrant = ">=0.2.0,<0.3.0"
+langchain-huggingface = ">=0.3.1,<0.4.0"
+sentence-transformers = ">=5.0.0,<6.0.0"
+qdrant-client = ">=1.15.0,<2.0.0"
+fastembed = ">=0.7.1,<0.8.0"
+pydantic = ">=2.11.7,<3.0.0"
+uvicorn = ">=0.35.0,<0.36.0"
+streamlit = ">=1.47.1,<2.0.0"
+langchain-google-genai = ">=2.1.8,<3.0.0"
+scikit-learn = ">=1.7.1,<2.0.0"

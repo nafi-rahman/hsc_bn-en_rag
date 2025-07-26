@@ -160,23 +160,36 @@ Fine-tuning Chunking: Experimenting with sentence-level chunking for highly fact
 Adding a Reranker: Implementing a cross-encoder model to re-rank the top-k retrieved results for finer-grained relevance scoring before generation.
 
 📁 Repository Layout
-.
-├── rag/                    # Core retrieval and generator logic
-│   ├── __init__.py
-│   ├── generator.py        # LLM interaction module
-│   └── retriever.py        # Qdrant hybrid search module
+HSC_BN-EN_RAG/
 ├── data/
 │   ├── 00_raw_pdf/
-│   │   └── raw.pdf         # Input PDF goes here
-│   └── scripts/            # Data ingestion pipeline
-│       ├── __init__.py
-│       ├── chunk_plan_a.py
-│       └── embed_and_upsert_qdrant.py
-├── app.py                  # Streamlit frontend application
-├── api.py                  # FastAPI backend
-├── Dockerfile
-├── docker-compose.yml
-└── README.md
+│   │   └── raw.pdf                       # Original PDF (text-based)
+│   └── processed/
+│       ├── chunks_a_output.jsonl        # Chunked content (JSONL format)
+│       └── hybrid_output.jsonl          # Final processed output
+│
+├── scripts/
+│   ├── chunk_plan_a.py                  # Chunking strategy
+│   ├── embed_and_upsert_qdrant.py       # Embedding + Qdrant upload
+│   └── gemini_raw_extract.py            # Gemini-based extraction
+│
+├── rag/
+│   ├── __pycache__/                     # Compiled Python cache
+│   ├── generator.py                     # Likely handles prompt generation
+│   ├── models.py                        # Data models / pydantic / schema
+│   └── retrieval.py                     # Retrieval logic (hybrid, dense, etc.)
+│
+├── app.py                               # Main Streamlit app
+│
+├── docker-compose.yml                   # Service orchestrator
+├── docker-entrypoint.sh                 # Entrypoint for dynamic service selection
+├── Dockerfile                           # Builds the image (shared by FastAPI & Streamlit)
+
+├── poetry.lock                          # Poetry lockfile for reproducible deps
+├── pyproject.toml                       # Poetry config + project deps
+├── .python-version                      # Python version (likely for `pyenv`)
+└── README.md                            # Project overview / instructions
+
 
 📄 License
 This project is licensed under the MIT License.
