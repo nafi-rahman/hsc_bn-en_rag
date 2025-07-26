@@ -8,12 +8,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential git curl && rm -rf /var/lib/apt/lists/*
 
 # install Poetry
-RUN pip install poetry==1.8.2
+RUN pip install poetry==2.1.3
 RUN poetry config virtualenvs.create false
 
 # copy lockfile first for Docker layer cache
 COPY pyproject.toml poetry.lock ./
-RUN poetry install --only main
+RUN poetry install --no-root
 
 # copy rest of the source
 COPY . .
