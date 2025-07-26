@@ -51,9 +51,7 @@ HSC_BN-EN_RAG/
 
 ---
 
-## ⚙️ Setup Guide
 
-### 🔧 Installation
 
 ## ⚙️ Setup Guide
 
